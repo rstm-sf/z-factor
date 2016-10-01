@@ -3,19 +3,38 @@
 #include <inttypes.h>
 #include <math.h>
 
-double DAK(double Ppr, double Tpr);
+/*
+    P  - pressures,   atm;
+    T  - temperature, celsius;
+    sg - specific gravity (0.57 < sg < 1.68).
+*/
+double calcZfactor_DAK(double P, double T, double sg);
 
 int main() {
 
-    const double Ppr = 2.958;
-    const double Tpr = 1.867;
-    const double z = DAK(Ppr, Tpr);
+    const double P  = 3250.0 * 6894.757293168 / 101325;
+    const double T  = (213.0 - 32.0) * 5.0 / 9.0;
+    const double sg = 0.666;
+    const double z  = calcZfactor_DAK(P, T, sg);
     printf("Z = %f\n", z);
 
     return 0;
 }
 
-double DAK(const double Ppr, const double Tpr) {
+double calcZfactor_DAK(const double P, const double T, const double sg) {
+
+    // Ppc - pseudocritical pressure, psia.
+    // Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
+    // Suttons correlations, B.C. Craft and M.F. Hawkins.
+    const double Ppc = 756.8 - 131.0 * sg - 3.60 * sg * sg;
+    const double Tpc = (169.2 + 349.5 * sg - 74.0 * sg * sg) * 5.0 / 9.0;
+
+    // Ppc - pseudo reduced pressure (1 (atm) = 1*101325/6894.757293168 (psia)).
+    // Tpc - pseudo reduced temperature (1 (°C) = 1+273.15 (K)).
+    // Dranchuk-Abbou Kassem: 0.2 < Ppc < 30, 1.0 < Tpc < 3.0.
+    const double Ppr = P * 101325 / 6894.757293168 / Ppc;
+    const double Tpr = (T + 273.15) / Tpc;
+    printf("Ppr = %f, Tpr = %f\n", Ppr, Tpr);
 
     double invTpr[5];
     invTpr[0] = 1.0 / Tpr;
@@ -41,6 +60,7 @@ double DAK(const double Ppr, const double Tpr) {
     uint16_t const maxLoop = 100;
     double convergence;
 
+    // Newton's method
     for(i; i < maxLoop; ++i) {
 
         const double Rr  = 0.27*Ppr * invTpr[0] / z;
