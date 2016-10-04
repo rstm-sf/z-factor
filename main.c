@@ -27,12 +27,12 @@ int8_t main() {
 
 	const double P  = 3250.0 * 6894.757293168 / 101325;
 	const double T  = (213.0 - 32.0) * 5.0 / 9.0;
+	// sg  - specific gravity (0.57 < sg < 1.68).
 	const double sg = 0.666;
 	double z        = 0.0;
 
 	// Ppc - pseudocritical pressure, psia.
 	// Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
-	// sg  - specific gravity (0.57 < sg < 1.68)
 	// Sutton's correlations, B.C. Craft and M.F. Hawkins.
 	const double Ppc = 756.8 - 131.0 * sg - 3.60 * sg * sg;
 	const double Tpc = 94.00000752 + 194.1666822 * sg - 41.1111144 * sg * sg;
@@ -91,9 +91,9 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 		const double fz = fun_DAK(C, Rr, zn);
 
 		if (fz > 0) {
-			b  = zn;
+			b = zn;
 		} else if (fz < 0) {
-			a  = zn;
+			a = zn;
 		} else if (fz == 0.0) {
 			break;
 		} else
