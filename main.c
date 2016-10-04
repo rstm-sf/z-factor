@@ -35,16 +35,16 @@ int8_t main() {
 	// Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
 	// Sutton's correlations, B.C. Craft and M.F. Hawkins.
 	const double Ppc = 756.8 - 131.0 * sg - 3.60 * sg * sg;
-	const double Tpc = 94.00000752 + 194.1666822 * sg - 41.1111144 * sg * sg;
+	const double Tpc = (169.2 + 349.5 * sg - 74.0 * sg * sg) * 5.0 / 9.0;
 
 	// Ppr - pseudo reduced pressure (1 (atm) = 1*101325/6894.757293168 (psia)).
 	// Tpr - pseudo reduced temperature (1 (°C) = 1+273.15 (K)).
 	// Dranchuk-Abbou Kassem: 0.2 < Ppc < 30, 1.0 < Tpc < 3.0.
-	const double Ppr = P * 14.695948775514218902863070110439 / Ppc;
+	const double Ppr = P * 101325 / 6894.757293168 / Ppc;
 	const double Tpr = (T + 273.15) / Tpc;
 	printf("Ppr = %f, Tpr = %f\n", Ppr, Tpr);
 
-	int8_t err      = calcZfactor_DAK(Ppr, Tpr, &z);
+	int8_t err = calcZfactor_DAK(Ppr, Tpr, &z);
 	if(err < 0)
 		printf("err = %" PRId16 "\n", err);
 
