@@ -11,17 +11,12 @@
 int8_t calcZfactor_DAK(double Ppr, double Tpr, double *z);
 
 /*
+	C   - coefficients Dranchuk equation;
 	Rr  - reduced density;
-	Tpr - pseudo reduced temperature, psia.
+	Tpr - pseudo reduced temperature, K;
+	z   - compressibility factor.
 */
-double coeff_C3(double Rr, double Tpr);
-
-/*
-	C  - coefficients Dranchuk equation;
-	Rr - reduced density;
-	z  - compressibility factor.
-*/
-double fun_DAK(double *C, double Rr, double z);
+double fun_DAK(double C, double Rr, double Tpr, double z);
 
 int8_t main() {
 
@@ -60,19 +55,18 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 
 	double const invTpr = 1.0 / Tpr;
 	double tmp          = invTpr*invTpr;
+	double const Rr_z   = 0.27*Ppr * invTpr;
 
-	double C[4];
-	C[0] = 0.3265 - 1.07 * invTpr - 0.5339 * tmp * invTpr + 0.01569 * tmp*tmp -
-		   0.05165 * tmp*tmp * invTpr;
-	tmp  = -0.7361 * invTpr + 0.1844 * tmp;
-	C[1] = 0.5475 + tmp;
-	C[2] = 0.1056 * tmp;
+	double C;
+	C   = (0.3265 - 1.07 * invTpr - 0.5339 * tmp * invTpr + 0.01569 * tmp*tmp -
+		   0.05165 * tmp*tmp * invTpr) * Rr_z;
+	tmp = -0.7361 * invTpr + 0.1844 * tmp;
+	C  += ((0.5475 + tmp) - (0.1056 * tmp) * Rr_z*Rr_z*Rr_z) * Rr_z*Rr_z;
 
 	uint16_t i             = 0;
 	uint16_t const maxIter = 100;
 	double const inv2      = 0.5;
-	double const epsilon   = 2 * 10e-6;
-	double const Rr_z      = 0.27*Ppr * invTpr;
+	double const epsilon   = 2.0e-6;
 	double a               = 0.6;
 	double b               = 1.3;
 	double convergence;
@@ -87,8 +81,7 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 			break;
 
 		const double Rr  = Rr_z / zn;
-		C[3] = coeff_C3(Rr, Tpr);
-		const double fz = fun_DAK(C, Rr, zn);
+		const double fz = fun_DAK(C, Rr, Tpr, zn);
 
 		if (fz > 0) {
 			b = zn;
@@ -110,17 +103,12 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 
 }
 
-inline double coeff_C3(const double Rr, const double Tpr) {
+inline double fun_DAK(const double C, const double Rr, const double Tpr, 
+	const double z) {
 
 	const double Rr2 = Rr * Rr;
 	const double tmp = 0.7210 * Rr2;
-	return (0.6134 * (1.0 + tmp) * Rr2 / (Tpr*Tpr*Tpr) * exp(-tmp));
-
-}
-
-inline double fun_DAK(const double *C, const double Rr, const double z) {
-
-	const double Rr2 = Rr * Rr;
-	return (z - 1.0 - C[0] * Rr - C[1] * Rr2 + C[2] * Rr2*Rr2*Rr - C[3]);
+	const double C2  = 0.6134 * (1.0 + tmp) * Rr2 / (Tpr*Tpr*Tpr) * exp(-tmp);
+	return (z - 1.0 - C - C2);
 
 }
