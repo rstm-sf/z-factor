@@ -4,6 +4,28 @@
 #include <math.h>
 
 /*
+    sg  - specific gravity (0.57 < sg < 1.68).
+*/
+double calcPpc(double sg);
+
+/*
+    sg  - specific gravity (0.57 < sg < 1.68).
+*/
+double calcTpc(double sg);
+
+/*
+    P   - pressure, atm;
+    sg  - specific gravity (0.57 < sg < 1.68).
+*/
+double calcPpr(double P, double sg);
+
+/*
+    T   - temperature, °C;
+    sg  - specific gravity (0.57 < sg < 1.68).
+*/
+double calcTpr(double T, double sg);
+
+/*
 	Ppr - pseudo reduced pressure, psia;
 	Tpr - pseudo reduced temperature, K;
 	z   - compressibility factor.
@@ -30,6 +52,38 @@ int8_t main() {
 	system("pause");
 
 	return 0;
+
+}
+
+double calcPpc(const double sg) {
+
+    // Ppc - pseudocritical pressure, psia.
+    // Sutton's correlations, B.C. Craft and M.F. Hawkins.
+    return(756.8 - 131.0 * sg - 3.60 * sg * sg);
+
+}
+
+double calcPpr(const double P, const double sg) {
+
+    // Ppr - pseudo reduced pressure (1 (atm) = 1*101325/6894.757293168 (psia)).
+    // Dranchuk-Abbou Kassem: 0.2 < Ppc < 30.
+    return(P * 101325 / 6894.757293168 / calcPpc(sg));
+
+}
+
+double calcTpc(const double sg) {
+
+    // Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
+    // Sutton's correlations, B.C. Craft and M.F. Hawkins.
+    return((169.2 + 349.5 * sg - 74.0 * sg * sg) * 5.0 / 9.0);
+
+}
+
+double calcTpr(const double T, const double sg) {
+
+    // Tpr - pseudo reduced temperature (1 (°C) = 1+273.15 (K)).
+    // Dranchuk-Abbou Kassem: 1.0 < Tpc < 3.0.
+    return((T + 273.15) / calcTpc(sg));
 
 }
 
@@ -103,17 +157,11 @@ void test() {
     const double sg = 0.666;
     double z        = 0.0;
 
-    // Ppc - pseudocritical pressure, psia.
-    // Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
-    // Sutton's correlations, B.C. Craft and M.F. Hawkins.
-    const double Ppc = 756.8 - 131.0 * sg - 3.60 * sg * sg;
-    const double Tpc = (169.2 + 349.5 * sg - 74.0 * sg * sg) * 5.0 / 9.0;
-
-    // Ppr - pseudo reduced pressure (1 (atm) = 1*101325/6894.757293168 (psia)).
-    // Tpr - pseudo reduced temperature (1 (°C) = 1+273.15 (K)).
+    // Ppr - pseudo reduced pressure.
+    // Tpr - pseudo reduced temperature.
     // Dranchuk-Abbou Kassem: 0.2 < Ppc < 30, 1.0 < Tpc < 3.0.
-    const double Ppr = P * 101325 / 6894.757293168 / Ppc;
-    const double Tpr = (T + 273.15) / Tpc;
+    const double Ppr = calcPpr(P, sg);
+    const double Tpr = calcTpr(T, sg);
     printf("Ppr = %f, Tpr = %f\n", Ppr, Tpr);
 
     int8_t err = calcZfactor_DAK(Ppr, Tpr, &z);
