@@ -47,7 +47,25 @@ void test();
 
 int8_t main() {
 
-    test();
+    const int8_t N = 10;
+    const double P  = 10.0;
+    const double T  = 0.0;
+    const double sg = 0.666;
+    double z[10]    = { 0.0 };
+
+    for(int8_t i = 0; i < N; ++i) {
+
+        const double Ppr = calcPpr(P + i*40, sg);
+        const double Tpr = calcTpr(T, sg);
+        printf("%" PRId8": Ppr = %f, Tpr = %f\n", i + 1, Ppr, Tpr);
+
+        int8_t err = calcZfactor_DAK(Ppr, Tpr, z + i);
+        if(err < 0)
+            printf("err = %" PRId8 "\n", err);
+
+        printf("Z = %f\n", z[i]);
+
+    }
 
 	system("pause");
 
@@ -103,8 +121,8 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 	uint16_t const maxIter = 100;
 	double const inv2      = 0.5;
 	double const epsilon   = 2.0e-6;
-	double a               = 0.6;
-	double b               = 1.3;
+	double a               = 0.2;
+	double b               = 2.0;
 	double convergence;
 	double zn;
 
@@ -166,7 +184,7 @@ void test() {
 
     int8_t err = calcZfactor_DAK(Ppr, Tpr, &z);
     if(err < 0)
-        printf("err = %" PRId16 "\n", err);
+        printf("err = %" PRId8 "\n", err);
 
     printf("Z = %f\n", z);
 
