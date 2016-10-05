@@ -30,7 +30,7 @@ double calcTpr(double T, double sg);
 	Tpr - pseudo reduced temperature, K;
 	z   - compressibility factor.
 */
-int8_t calcZfactor_DAK(double Ppr, double Tpr, double *z);
+int8_t calcZfactor_DAK(double Ppr, double Tpr, double *z, double ra, double rb);
 
 /*
 	C   - coefficients Dranchuk equation;
@@ -50,7 +50,7 @@ int8_t main() {
     const int8_t N = 10;
     const double P  = 10.0;
     const double T  = 0.0;
-    const double sg = 0.666;
+    const double sg = 0.9;
     double z[10]    = { 0.0 };
 
     for(int8_t i = 0; i < N; ++i) {
@@ -59,7 +59,7 @@ int8_t main() {
         const double Tpr = calcTpr(T, sg);
         printf("%" PRId8": Ppr = %f, Tpr = %f\n", i + 1, Ppr, Tpr);
 
-        int8_t err = calcZfactor_DAK(Ppr, Tpr, z + i);
+        int8_t err = calcZfactor_DAK(Ppr, Tpr, z + i, 0.2, 2);
         if(err < 0)
             printf("err = %" PRId8 "\n", err);
 
@@ -105,7 +105,8 @@ double calcTpr(const double T, const double sg) {
 
 }
 
-int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
+int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z,
+    const double za, const double zb) {
 
 	double const invTpr = 1.0 / Tpr;
 	double tmp          = invTpr*invTpr;
@@ -121,8 +122,8 @@ int8_t calcZfactor_DAK(const double Ppr, const double Tpr, double *z) {
 	uint16_t const maxIter = 100;
 	double const inv2      = 0.5;
 	double const epsilon   = 2.0e-6;
-	double a               = 0.2;
-	double b               = 2.0;
+	double a               = za;
+	double b               = zb;
 	double convergence;
 	double zn;
 
@@ -182,7 +183,7 @@ void test() {
     const double Tpr = calcTpr(T, sg);
     printf("Ppr = %f, Tpr = %f\n", Ppr, Tpr);
 
-    int8_t err = calcZfactor_DAK(Ppr, Tpr, &z);
+    int8_t err = calcZfactor_DAK(Ppr, Tpr, &z, 0.6, 1.2);
     if(err < 0)
         printf("err = %" PRId8 "\n", err);
 
