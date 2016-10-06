@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+#import matplotlib.ticker as tick
 
 '''
 	sg  - specific gravity (0.57 < sg < 1.68).
@@ -130,20 +132,30 @@ def test():
 
 
 def main():
-	N  = 50
-	P  = np.linspace(0, 500, N)
-	T  = 0.0
-	sg = 0.9
-	z  = np.zeros(N)
+	N   = 50
+	P   = np.linspace(0, 500, N)
+	T   = -30
+	sg  = 0.661
+	z   = np.zeros(N)
+	Ppr = np.zeros(N)
 
 	for i in range(N):
 
-		Ppr  = calcPpr(P[i], sg)
-		Tpr  = calcTpr(T, sg)
-		z[i] = calcZfactor_DAK(Ppr, Tpr, 0.2, 2)
+		Ppr[i] = calcPpr(P[i], sg)
+		Tpr    = calcTpr(T, sg)
+		z[i]   = calcZfactor_DAK(Ppr[i], Tpr, 1e-16, 10000)
 
-	print('Z =',)
-	print(z)
+	fig  = plt.figure()
+	axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+
+	axes.plot(Ppr, z)
+	#axes.set_ylim(min(z), max(z))
+	axes.set_xlim(min(Ppr), max(Ppr))
+	axes.set_ylabel('Compressibility factor Z')
+	axes.set_xlabel('Pseudo reduced pressure')
+
+	plt.grid()
+	plt.show()
 
 
 main()
