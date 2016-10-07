@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 '''
 	sg  - specific gravity (0.57 < sg < 1.68).
@@ -165,4 +166,82 @@ def test2():
 	plt.show()
 
 
-test2()
+'''
+	TEST 3: performance
+'''
+def test3():
+	print('Выберете от чего будет зависеть сжимаемость. Варианты:')
+	print('\t' + '1 - псевдо привиденое давление;')
+	print('\t' + '2 - псевдо привиденая температура.')
+	print('Поле ввода: ', end = '')
+	dependence = int(input())
+	if (dependence != 1 and dependence != 2):
+		print('Incorrectly \'dependence\'!\Выход.')
+		return
+
+	M   = 20
+	N   = 50
+	sg  = 0.661
+	z   = np.zeros((M, N))
+	za  = 2.5e-4
+	zb  = 16
+
+	startTime = 0
+
+	if (dependence == 1):
+		startTime = time.time()
+
+		P   = np.linspace(0, 500, N)
+		T   = np.linspace(-30, 200, M)
+		x = calcPpr(P, sg)
+		const = calcTpr(T, sg)
+
+		for i in range(M):
+			tmp = const[i]
+			for j in range(N):
+				z[i, j] = calcZfactor_DAK(x[j], tmp, za, zb)
+
+		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Tpr']
+
+	elif (dependence == 2):
+		startTime = time.time()
+
+		P   = np.linspace(0, 500, M)
+		T   = np.linspace(-30, 200, N)
+		const = calcPpr(P, sg)
+		x = calcTpr(T, sg)
+
+		for i in range(M):
+			tmp = const[i]
+			for j in range(N):
+				z[i, j] = calcZfactor_DAK(tmp, x[j], za, zb)
+
+		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Ppr']
+
+	clrs = ('#330000','#660000','#993300','#996600','#CC6600','#CC6666',
+		    '#CC9900','#CC9966','#CCCC99','#CCCC00','#C9A24B','#94AB27',
+		    '#8A8B75','#8A725E','#A080A4','#9C8BBF','#969CE7','#976CD1',
+		    '#983BBA','#A92998','#AAAA9A','#EFBEAA','#CCCC66')
+
+	fig  = plt.figure()
+	axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+
+	str_label = str_xyc[2] + ' = '
+	for i in range(M):
+		axes.plot(x, z[i], c = clrs[i], label = str_label + str(const[i]))
+
+	handles, labels = axes.get_legend_handles_labels()
+	axes.legend(handles, labels, loc = 'upper left', ncol = 2, fontsize = 10)
+	axes.set_ylim(z.min(), z.max())
+	axes.set_xlim(x.min(), x.max())
+	axes.set_ylabel(str_xyc[1])
+	axes.set_xlabel(str_xyc[0])
+	plt.grid()
+
+	endTime = time.time()
+	print('Elapsed time: {:.3f} sec'.format(endTime - startTime))
+
+	plt.show()
+
+
+test3()
