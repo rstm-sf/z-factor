@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib.ticker as tick
 
 '''
 	sg  - specific gravity (0.57 < sg < 1.68).
@@ -94,10 +93,10 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 		elif (fz == 0.0):
 			break
 
-	print('Iter =', end=' ')
-	print(i)
-	print('Convergence =', end=' ')
-	print(convergence)
+	#print('Iter =', end=' ')
+	#print(i)
+	#print('Convergence =', end=' ')
+	#print(convergence)
 
 	if (i == maxIter - 1):
 		print('Warning: max iter!\n')
@@ -106,9 +105,9 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 
 
 '''
-	TEST solve (Applied Petroleum Reservoir Engineering. B.C. Craft, M.F. Hawkins)
+	TEST 1: solve (Applied Petroleum Reservoir Engineering. B.C. Craft, M.F. Hawkins)
 '''
-def test():
+def test1():
 	P  = 3250.0 * 6894.757293168 / 101325
 	T  = (213.0 - 32.0) * 5.0 / 9.0
 	# sg  - specific gravity (0.57 < sg < 1.68).
@@ -131,26 +130,34 @@ def test():
 	print(z)
 
 
-def main():
+'''
+	TEST 2: the construction of a family of curves.
+'''
+def test2():
 	N   = 50
-	P   = np.linspace(0, 500, N)
-	T   = -30
+	M   = 20
 	sg  = 0.661
-	z   = np.zeros(N)
-	Ppr = np.zeros(N)
+	P   = np.linspace(0, 500, N)
+	T   = np.linspace(-30, 200, M)
+	Ppr = calcPpr(P, sg)
+	Tpr = calcTpr(T, sg)
 
-	for i in range(N):
-
-		Ppr[i] = calcPpr(P[i], sg)
-		Tpr    = calcTpr(T, sg)
-		z[i]   = calcZfactor_DAK(Ppr[i], Tpr, 1e-16, 10000)
+	z = np.zeros((M, N))
+	for i in range(M):
+		tmp = Tpr[i]
+		for j in range(N):
+			z[i, j] = calcZfactor_DAK(Ppr[j], tmp, 2.5e-4, 6)
 
 	fig  = plt.figure()
 	axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
-	axes.plot(Ppr, z)
-	#axes.set_ylim(min(z), max(z))
-	axes.set_xlim(min(Ppr), max(Ppr))
+	for i in range(M):
+		axes.plot(Ppr, z[i], label = 'T = ' + str(Tpr[i]))
+
+	handles, labels = axes.get_legend_handles_labels()
+	axes.legend(handles, labels, loc = 'upper left', ncol = 2, fontsize = 12)
+	axes.set_ylim(z.min(), z.max())
+	axes.set_xlim(Ppr.min(), Ppr.max())
 	axes.set_ylabel('Compressibility factor Z')
 	axes.set_xlabel('Pseudo reduced pressure')
 
@@ -158,4 +165,4 @@ def main():
 	plt.show()
 
 
-main()
+test2()
