@@ -201,7 +201,8 @@ def test3():
 			for j in range(N):
 				z[i, j] = calcZfactor_DAK(x[j], tmp, za, zb)
 
-		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Tpr']
+		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Tpr',
+		            'upper left']
 
 	elif (dependence == 2):
 		startTime = time.time()
@@ -216,7 +217,8 @@ def test3():
 			for j in range(N):
 				z[i, j] = calcZfactor_DAK(tmp, x[j], za, zb)
 
-		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Ppr']
+		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Ppr',
+		            'upper right']
 
 	clrs20 = ('#689f38','#009688','#b2dfdb','#e64a19','#00bcd4','#212121',
 	          '#757575','#BDBDBD','#fbc02d','#ffeb3b','#0288d1','#03a9f4',
@@ -231,7 +233,7 @@ def test3():
 		axes.plot(x, z[i], c = clrs20[i], label = str_label + str(const[i]))
 
 	handles, labels = axes.get_legend_handles_labels()
-	axes.legend(handles, labels, loc = 'upper left', ncol = 2, fontsize = 10)
+	axes.legend(handles, labels, loc = str_xyc[3], ncol = 2, fontsize = 10)
 	axes.set_ylim(z.min(), z.max())
 	axes.set_xlim(x.min(), x.max())
 	axes.set_ylabel(str_xyc[1])
@@ -239,7 +241,7 @@ def test3():
 	plt.grid()
 
 	endTime = time.time()
-	print('Elapsed time: {:.3f} sec'.format(endTime - startTime))
+	print('Прошло времени: {:.3f} с'.format(endTime - startTime))
 
 	plt.show()
 
