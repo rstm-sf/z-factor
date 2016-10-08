@@ -1,21 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import math
 
 '''
 	sg  - specific gravity (0.57 < sg < 1.68).
+	return: Ppc - pseudocritical pressure, psia.
 '''
 def calcPpc(sg):
-	# Ppc - pseudocritical pressure, psia.
 	# Sutton's correlations, B.C. Craft and M.F. Hawkins.
 	return(756.8 - 131.0 * sg - 3.60 * sg * sg)
 
 
 '''
 	sg  - specific gravity (0.57 < sg < 1.68).
+	return: Tpc - pseudocritical temperature, K.
 '''
 def calcTpc(sg):
-	# Tpc - pseudocritical temperature, K (degrees Rankine, 1(K) = 1*5/9 (°R)).
+	# 1(K) = 1*5/9 (°R).
 	# Sutton's correlations, B.C. Craft and M.F. Hawkins.
 	return((169.2 + 349.5 * sg - 74.0 * sg * sg) * 5.0 / 9.0)
 
@@ -23,9 +25,10 @@ def calcTpc(sg):
 '''
 	P   - pressure, atm;
 	sg  - specific gravity (0.57 < sg < 1.68).
+	return: Ppr - pseudo reduced pressure.
 '''
 def calcPpr(P, sg):
-	# Ppr - pseudo reduced pressure (1 (atm) = 1*101325/6894.757293168 (psia)).
+	# 1 (atm) = 1*101325/6894.757293168 (psia).
 	# Dranchuk-Abbou Kassem: 0.2 < Ppc < 30.
 	return(P * 101325 / 6894.757293168 / calcPpc(sg))
 
@@ -33,9 +36,10 @@ def calcPpr(P, sg):
 '''
 	T  - temperature, °C;
 	sg - specific gravity (0.57 < sg < 1.68).
+	return: Tpr - pseudo reduced temperature.
 '''
 def calcTpr(T, sg):
-	# Tpr - pseudo reduced temperature (1 (°C) = 1+273.15 (K)).
+	# 1 (°C) = 1+273.15 (K).
 	# Dranchuk-Abbou Kassem: 1.0 < Tpc < 3.0.
 	return((T + 273.15) / calcTpc(sg))
 
@@ -45,11 +49,12 @@ def calcTpr(T, sg):
 	Rr  - reduced density;
 	Tpr - pseudo reduced temperature, K;
 	z   - compressibility factor.
+	return: f(z) = z - z~ -> 0.
 '''
 def fun_DAK(C, Rr, Tpr, z):
 	Rr2 = Rr * Rr
 	tmp = 0.7210 * Rr2
-	C2  = 0.6134 * (1.0 + tmp) * Rr2 / (Tpr*Tpr*Tpr) * np.exp(-tmp)
+	C2  = 0.6134 * (1.0 + tmp) * Rr2 / (Tpr*Tpr*Tpr) * math.exp(-tmp)
 	return (z - C - C2)
 
 
@@ -57,6 +62,7 @@ def fun_DAK(C, Rr, Tpr, z):
 	Ppr    - pseudo reduced pressure, psia;
 	Tpr    - pseudo reduced temperature, K;
 	za, zb - z locate [za, zb] (bisection method).
+	return: z - gas compressibility factor based on Dranchuk-Abbou Kassem EoS.
 '''
 def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 	invTpr = 1.0 / Tpr
@@ -110,8 +116,11 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 	Tpr    - pseudo reduced temperature, K;
 	da, db - dZdT locate [da, db] (bisection method).
 	za, zb - z locate [za, zb] (bisection method).
+	return: dZ/dTpr,
+	Z   - gas compressibility factor based on Dranchuk-Abbou Kassem EoS;
+	Tpr - pseudo reduced temperature, K.
 '''
-def calc_dZdT(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
+def calc_dZdTpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
 	dRrdT   = 0.27*Ppr / (Tpr*Tpr * z)
 	i       = 0
@@ -146,8 +155,11 @@ def calc_dZdT(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	Tpr    - pseudo reduced temperature, K;
 	da, db - dZdPr locate [da, db] (bisection method).
 	za, zb - z locate [za, zb] (bisection method).
+	return: dZ/dPpr,
+	Z   - gas compressibility factor based on Dranchuk-Abbou Kassem EoS;
+	Ppr - pseudo reduced pressure, psia.
 '''
-def calc_dZdPr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
+def calc_dZdPpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
 	dRrdPr  = 0.27 / (Tpr * z)
 	i       = 0
@@ -225,7 +237,7 @@ def test2():
 	axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
 	for i in range(M):
-		axes.plot(Ppr, z[i], label = 'T = ' + str(Tpr[i]))
+		axes.plot(Ppr, z[i], label = 'Tpr = ' + str(Tpr[i]))
 
 	handles, labels = axes.get_legend_handles_labels()
 	axes.legend(handles, labels, loc = 'upper left', ncol = 2, fontsize = 12)
@@ -242,13 +254,24 @@ def test2():
 	TEST 3: performance
 '''
 def test3():
-	print('Выберете от чего будет зависеть сжимаемость. Варианты:')
-	print('\t' + '1 - псевдо привиденное давление;')
-	print('\t' + '2 - псевдо привиденная температура.')
-	print('Поле ввода: ', end = '')
+	print('Выберете один из следующих вариантов:')
+	print('\t' + '1. Построить набор из 20 кривых сжимаемости от давления ' +
+	             'при заданных значениях температуры по 50 точек на кривой ' +
+	             'равномерно распределенных.')
+	print('\t' + '2. Построить набор из 20 кривых сжимаемости от температуры '+
+	             'при заданных значениях давления по 50 точек на кривой '+
+	             ' равномерно распределенных.')
+	print('\t' + '3. Построить набор из 20 кривых производной сжимаемости ' +
+	             'по давлению как зависимость от давления при заданных значениях '+
+	             'температуры по 50 точек на кривой равномерно распределенных.')
+	print('\t' + '4. Построить набор из 20 кривых производной сжимаемости '+
+	             'по температуре как зависимость от давления при заданных '+
+	             'значениях температуры по 50 точек на кривой равномерно '+
+	             'распределенных.')
+	print('\nПоле ввода: ', end = '')
 	dependence = int(input())
-	if (dependence != 1 and dependence != 2 and dependence != 3 and dependence != 4):
-		print('Incorrectly \'dependence\'!\Выход.')
+	if (dependence < 1 and dependence > 4):
+		print('Неверный ввод!\Выход.')
 		return
 
 	M   = 20
@@ -303,10 +326,10 @@ def test3():
 		for i in range(M):
 			tmp = const[i]
 			for j in range(N):
-				y[i, j] = calc_dZdT(tmp, x[j], -zb, -za, za, zb)
+				y[i, j] = calc_dZdTpr(tmp, x[j], -zb, -za, za, zb)
 
-		str_xyc = ['Pseudo reduced temperature', 'dZdT', 'Ppr',
-		            'lower left']
+		str_xyc = ['Pseudo reduced temperature', 'dZ/dTpr', 'Ppr',
+		            'lower right']
 
 	elif (dependence == 4):
 		startTime = time.time()
@@ -319,9 +342,9 @@ def test3():
 		for i in range(M):
 			tmp = const[i]
 			for j in range(N):
-				y[i, j] = calc_dZdPr(tmp, x[j], za, zb, za, zb)
+				y[i, j] = calc_dZdPpr(tmp, x[j], za, zb, za, zb)
 
-		str_xyc = ['Pseudo reduced temperature', 'dZdPr', 'Ppr',
+		str_xyc = ['Pseudo reduced temperature', 'dZ/dPpr', 'Ppr',
 		            'upper right']
 
 	clrs20 = ('#689f38','#009688','#b2dfdb','#e64a19','#00bcd4','#212121',
