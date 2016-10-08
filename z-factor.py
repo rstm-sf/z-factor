@@ -218,17 +218,17 @@ def test3():
 
 		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Ppr']
 
-	clrs = ('#330000','#660000','#993300','#996600','#CC6600','#CC6666',
-		    '#CC9900','#CC9966','#CCCC99','#CCCC00','#C9A24B','#94AB27',
-		    '#8A8B75','#8A725E','#A080A4','#9C8BBF','#969CE7','#976CD1',
-		    '#983BBA','#A92998','#AAAA9A','#EFBEAA','#CCCC66')
+	clrs20 = ('#689f38','#009688','#b2dfdb','#e64a19','#00bcd4','#212121',
+	          '#757575','#BDBDBD','#fbc02d','#ffeb3b','#0288d1','#03a9f4',
+	          '#b3e5fc','#536dfe','#757575','#9C8BBF','#969CE7','#448aff',
+	          '#EFBEAA','#c2185b')
 
 	fig  = plt.figure()
 	axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
 	str_label = str_xyc[2] + ' = '
 	for i in range(M):
-		axes.plot(x, z[i], c = clrs[i], label = str_label + str(const[i]))
+		axes.plot(x, z[i], c = clrs20[i], label = str_label + str(const[i]))
 
 	handles, labels = axes.get_legend_handles_labels()
 	axes.legend(handles, labels, loc = 'upper left', ncol = 2, fontsize = 10)
