@@ -56,7 +56,7 @@ def fun_DAK(C, Rr, Tpr, z):
 '''
 	Ppr    - pseudo reduced pressure, psia;
 	Tpr    - pseudo reduced temperature, K;
-	ra, rb - z locate [ra, rb] (bisection method).
+	za, zb - z locate [za, zb] (bisection method).
 '''
 def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 	invTpr = 1.0 / Tpr
@@ -103,6 +103,78 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 		print('Warning: max iter!\n')
 
 	return zn
+
+
+'''
+	Ppr    - pseudo reduced pressure, psia;
+	Tpr    - pseudo reduced temperature, K;
+	da, db - dZdT locate [da, db] (bisection method).
+	za, zb - z locate [za, zb] (bisection method).
+'''
+def calc_dZdT(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
+	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
+	dRrdT   = 0.27*Ppr / (Tpr*Tpr * z)
+	i       = 0
+	maxIter = 100
+	inv2    = 0.5
+	epsilon = 2.0e-6
+	a       = da
+	b       = db
+	dZdTn   = 0.0
+
+	for i in range(maxIter):
+
+		dZdTn = (a + b) * inv2
+		convergence = abs(b - a)
+		if(convergence <= epsilon):
+			break
+
+		fz = dZdTn + dRrdT
+
+		if (fz > 0):
+			b = dZdTn
+		elif (fz < 0):
+			a = dZdTn
+		elif (fz == 0.0):
+			break
+
+	return dZdTn
+
+
+'''
+	Ppr    - pseudo reduced pressure, psia;
+	Tpr    - pseudo reduced temperature, K;
+	da, db - dZdPr locate [da, db] (bisection method).
+	za, zb - z locate [za, zb] (bisection method).
+'''
+def calc_dZdPr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
+	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
+	dRrdPr  = 0.27 / (Tpr * z)
+	i       = 0
+	maxIter = 100
+	inv2    = 0.5
+	epsilon = 2.0e-6
+	a       = da
+	b       = db
+	dZdPrn  = 0.0
+
+	for i in range(maxIter):
+
+		dZdPrn = (a + b) * inv2
+		convergence = abs(b - a)
+		if(convergence <= epsilon):
+			break
+
+		fz = dZdPrn - dRrdPr
+
+		if (fz > 0):
+			b = dZdPrn
+		elif (fz < 0):
+			a = dZdPrn
+		elif (fz == 0.0):
+			break
+
+	return dZdPrn
 
 
 '''
@@ -171,19 +243,19 @@ def test2():
 '''
 def test3():
 	print('Выберете от чего будет зависеть сжимаемость. Варианты:')
-	print('\t' + '1 - псевдо привиденое давление;')
-	print('\t' + '2 - псевдо привиденая температура.')
+	print('\t' + '1 - псевдо привиденное давление;')
+	print('\t' + '2 - псевдо привиденная температура.')
 	print('Поле ввода: ', end = '')
 	dependence = int(input())
-	if (dependence != 1 and dependence != 2):
+	if (dependence != 1 and dependence != 2 and dependence != 3 and dependence != 4):
 		print('Incorrectly \'dependence\'!\Выход.')
 		return
 
 	M   = 20
 	N   = 50
 	sg  = 0.661
-	z   = np.zeros((M, N))
-	za  = 2.5e-4
+	y   = np.zeros((M, N))
+	za  = 2.5e-16
 	zb  = 16
 
 	startTime = 0
@@ -191,15 +263,15 @@ def test3():
 	if (dependence == 1):
 		startTime = time.time()
 
-		P   = np.linspace(0, 500, N)
-		T   = np.linspace(-30, 200, M)
-		x = calcPpr(P, sg)
+		P     = np.linspace(0, 500, N)
+		T     = np.linspace(-30, 200, M)
+		x     = calcPpr(P, sg)
 		const = calcTpr(T, sg)
 
 		for i in range(M):
 			tmp = const[i]
 			for j in range(N):
-				z[i, j] = calcZfactor_DAK(x[j], tmp, za, zb)
+				y[i, j] = calcZfactor_DAK(x[j], tmp, za, zb)
 
 		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Tpr',
 		            'upper left']
@@ -207,17 +279,49 @@ def test3():
 	elif (dependence == 2):
 		startTime = time.time()
 
-		P   = np.linspace(0, 500, M)
-		T   = np.linspace(-30, 200, N)
+		P     = np.linspace(1, 500, M)
+		T     = np.linspace(-30, 200, N)
 		const = calcPpr(P, sg)
-		x = calcTpr(T, sg)
+		x     = calcTpr(T, sg)
 
 		for i in range(M):
 			tmp = const[i]
 			for j in range(N):
-				z[i, j] = calcZfactor_DAK(tmp, x[j], za, zb)
+				y[i, j] = calcZfactor_DAK(tmp, x[j], za, zb)
 
-		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Ppr',
+		str_xyc = ['Pseudo reduced temperature', 'Compressibility factor Z', 'Ppr',
+		            'upper right']
+
+	elif (dependence == 3):
+		startTime = time.time()
+
+		P     = np.linspace(1, 500, M)
+		T     = np.linspace(-30, 200, N)
+		const = calcPpr(P, sg)
+		x     = calcTpr(T, sg)
+
+		for i in range(M):
+			tmp = const[i]
+			for j in range(N):
+				y[i, j] = calc_dZdT(tmp, x[j], -zb, -za, za, zb)
+
+		str_xyc = ['Pseudo reduced temperature', 'dZdT', 'Ppr',
+		            'lower left']
+
+	elif (dependence == 4):
+		startTime = time.time()
+
+		P     = np.linspace(1, 500, M)
+		T     = np.linspace(-30, 200, N)
+		const = calcPpr(P, sg)
+		x     = calcTpr(T, sg)
+
+		for i in range(M):
+			tmp = const[i]
+			for j in range(N):
+				y[i, j] = calc_dZdPr(tmp, x[j], za, zb, za, zb)
+
+		str_xyc = ['Pseudo reduced temperature', 'dZdPr', 'Ppr',
 		            'upper right']
 
 	clrs20 = ('#689f38','#009688','#b2dfdb','#e64a19','#00bcd4','#212121',
@@ -230,11 +334,11 @@ def test3():
 
 	str_label = str_xyc[2] + ' = '
 	for i in range(M):
-		axes.plot(x, z[i], c = clrs20[i], label = str_label + str(const[i]))
+		axes.plot(x, y[i], c = clrs20[i], label = str_label + str(const[i]))
 
 	handles, labels = axes.get_legend_handles_labels()
 	axes.legend(handles, labels, loc = str_xyc[3], ncol = 2, fontsize = 10)
-	axes.set_ylim(z.min(), z.max())
+	axes.set_ylim(y.min(), y.max())
 	axes.set_xlim(x.min(), x.max())
 	axes.set_ylabel(str_xyc[1])
 	axes.set_xlabel(str_xyc[0])
