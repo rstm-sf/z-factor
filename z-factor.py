@@ -45,34 +45,25 @@ def calcTpr(T, sg):
 
 
 '''
-	C   - coefficients Dranchuk equation;
-	Rr  - reduced density;
-	Tpr - pseudo reduced temperature, K;
-	z   - compressibility factor.
-	return: f(z) = z - z~ -> 0.
-'''
-def fun_DAK(C, Rr, Tpr, z):
-	Rr2 = Rr * Rr
-	tmp = 0.7210 * Rr2
-	C2  = 0.6134 * (1.0 + tmp) * Rr2 / (Tpr*Tpr*Tpr) * math.exp(-tmp)
-	return (z - C - C2)
-
-
-'''
 	Ppr    - pseudo reduced pressure, psia;
 	Tpr    - pseudo reduced temperature, K;
 	za, zb - z locate [za, zb] (bisection method).
 	return: z - gas compressibility factor based on Dranchuk-Abbou Kassem EoS.
 '''
 def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
-	invTpr = 1.0 / Tpr
-	tmp    = invTpr*invTpr
-	Rr_z   = 0.27*Ppr * invTpr
+	invTpr  = 1.0 / Tpr
+	invTpr2 = invTpr*invTpr
+	invTpr3 = invTpr2*invTpr
+	Rr_z    = 0.27*Ppr * invTpr
+	Rr_z2   = Rr_z*Rr_z
 
-	C   = (0.3265 - 1.07 * invTpr - 0.5339 * tmp * invTpr + 0.01569 * tmp*tmp -
-		   0.05165 * tmp*tmp * invTpr) * Rr_z
-	tmp = -0.7361 * invTpr + 0.1844 * tmp
-	C  += 1.0 + ((0.5475 + tmp) - (0.1056 * tmp) * Rr_z*Rr_z*Rr_z) * Rr_z*Rr_z
+	C1  = (0.3265 - 1.07 * invTpr - 0.5339 * invTpr3 +
+		  0.01569 * invTpr2*invTpr2 - 0.05165 * invTpr2*invTpr3) * Rr_z
+	tmp = -0.7361 * invTpr + 0.1844 * invTpr2
+	C2  = (0.5475 + tmp) * Rr_z2
+	C3  = 0.1056 * tmp * Rr_z2*Rr_z2*Rr_z
+	C4  = 0.6134 * Rr_z2 * invTpr3
+	C5  = 0.7210 * Rr_z2
 
 	i       = 0
 	maxIter = 100
@@ -81,6 +72,7 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 	a       = za
 	b       = zb
 	zn      = 0.0
+	one     = 1.0
 
 	# The method bisection
 	for i in range(maxIter):
@@ -90,8 +82,11 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 		if(convergence <= epsilon):
 			break
 
-		Rr  = Rr_z / zn
-		fz = fun_DAK(C, Rr, Tpr, zn)
+		invZn  = one / zn
+		invZn2 = invZn*invZn
+		tmp = C5 * invZn2
+		fz = (zn - one - C1 * invZn - C2 * invZn2 + C3 * invZn2*invZn2*invZn -
+			 C4 * invZn2 * (one + tmp) * math.exp(-tmp))
 
 		if (fz > 0):
 			b = zn
@@ -100,13 +95,8 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 		elif (fz == 0.0):
 			break
 
-	#print('Iter =', end=' ')
-	#print(i)
-	#print('Convergence =', end=' ')
-	#print(convergence)
-
 	if (i == maxIter - 1):
-		print('Warning: max iter!\n')
+		print('calcZfactor_DAK(). Warning: max iter!\n')
 
 	return zn
 
@@ -117,8 +107,7 @@ def calcZfactor_DAK(Ppr, Tpr, za = 0.7, zb = 1.1):
 	da, db - dZdT locate [da, db] (bisection method).
 	za, zb - z locate [za, zb] (bisection method).
 	return: dZ/dTpr,
-	Z   - gas compressibility factor based on Dranchuk-Abbou Kassem EoS;
-	Tpr - pseudo reduced temperature, K.
+	Z - gas compressibility factor based on Dranchuk-Abbou Kassem EoS.
 '''
 def calc_dZdTpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
@@ -149,6 +138,9 @@ def calc_dZdTpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 
 	return dZdTn
 
+	if (i == maxIter - 1):
+		print('calc_dZdTpr(). Warning: max iter!\n')
+
 
 '''
 	Ppr    - pseudo reduced pressure, psia;
@@ -156,8 +148,7 @@ def calc_dZdTpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	da, db - dZdPr locate [da, db] (bisection method).
 	za, zb - z locate [za, zb] (bisection method).
 	return: dZ/dPpr,
-	Z   - gas compressibility factor based on Dranchuk-Abbou Kassem EoS;
-	Ppr - pseudo reduced pressure, psia.
+	Z   - gas compressibility factor based on Dranchuk-Abbou Kassem EoS.
 '''
 def calc_dZdPpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 	z       = calcZfactor_DAK(Ppr, Tpr, za, zb)
@@ -185,6 +176,9 @@ def calc_dZdPpr(Ppr, Tpr, da, db, za = 0.7, zb = 1.1):
 			a = dZdPrn
 		elif (fz == 0.0):
 			break
+
+	if (i == maxIter - 1):
+		print('calc_dZdPpr(). Warning: max iter!\n')
 
 	return dZdPrn
 
@@ -278,7 +272,7 @@ def test3():
 	N   = 50
 	sg  = 0.661
 	y   = np.zeros((M, N))
-	za  = 2.5e-16
+	za  = 2.5e-2
 	zb  = 16
 
 	startTime = 0
@@ -297,7 +291,7 @@ def test3():
 				y[i, j] = calcZfactor_DAK(x[j], tmp, za, zb)
 
 		str_xyc = ['Pseudo reduced pressure', 'Compressibility factor Z', 'Tpr',
-		            'upper left']
+		            'lower right']
 
 	elif (dependence == 2):
 		startTime = time.time()
@@ -313,7 +307,7 @@ def test3():
 				y[i, j] = calcZfactor_DAK(tmp, x[j], za, zb)
 
 		str_xyc = ['Pseudo reduced temperature', 'Compressibility factor Z', 'Ppr',
-		            'upper right']
+		            'lower right']
 
 	elif (dependence == 3):
 		startTime = time.time()
